@@ -2,7 +2,6 @@
 # Install: pip install -r requirements.txt
 
 # ── Garak (LLM vulnerability scanner) ────────────────────────────────
-garak>=0.17.0
 
 # ── LLM Guard (runtime input/output protection) ──────────────────────
 # Replaced by a pure-Python implementation in llm_guard/run_guard.py.

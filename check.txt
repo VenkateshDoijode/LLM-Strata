@@ -1,21 +1,9 @@
-run_guard.py and it passes the syntax check (py_compile and ast.parse), but it isn't a complete copy because your screenshots skip part of the file.
-
-Lines 323–330 don't appear in any of the three images, so they are missing from TEST_CASES. That gap is exactly one test case plus the label line of the "synthesize illegal drugs" case. In my file:
-
-I left out the unseen test case, so the file is 528 lines against your original 533.
-I filled the label of the drugs case as "label": "BLOCKED — banned topic", which is my inference. print_result needs a label there, so please check it against your original.
-
 req.txt
 
 setup.py
 
 
 all 306 lines of run_langfuse.py from your two screenshots, and it passes the syntax check (py_compile and ast.parse). I haven't run it, and it needs env_loader, profile_loader, client_factory, langfuse and langfuse_config.yaml in your project.
-
-A hover tooltip covers part of lines 118–119, which I couldn't read. I filled them in from the surrounding code and the tooltip text:
-
-Line 118: with lf.start_as_current_observation(
-Line 119: as_type="generation",
 
 Please check those two lines against your original.
 

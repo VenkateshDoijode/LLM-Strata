@@ -22,7 +22,7 @@ Usage:
     python run_security.py --langfuse-only       # LangFuse monitoring demo only
     python run_security.py --human-redteam       # launch human red team session
     python run_security.py --encoded-only        # encoded/obfuscated attack scan only
-    python run_security.py --many-shot-only      # many-shot jailbreak scan only
+    python run_security.py --in-context-only     # in-context attack jailbreak scan only
     python run_security.py --multilingual-only   # multilingual attack scan only
     python run_security.py --tool-inject-only    # agentic tool-call injection only
     python run_security.py --backdoor-only       # backdoor trigger scan only
@@ -34,7 +34,7 @@ Usage:
     python run_security.py --skip-ragas          # skip RAGAS (only if no RAG app)
     python run_security.py --skip-langfuse       # skip LangFuse (if keys not set)
     python run_security.py --skip-encoded        # skip encoded attack scan
-    python run_security.py --skip-many-shot      # skip many-shot jailbreak scan
+    python run_security.py --skip-in-context     # skip in-context attack jailbreak scan
     python run_security.py --skip-multilingual   # skip multilingual attack scan
     python run_security.py --skip-tool-inject    # skip tool-call injection scan
     python run_security.py --skip-backdoor       # skip backdoor trigger scan
@@ -88,14 +88,14 @@ def main():
     group.add_argument("--langfuse-only", action="store_true", help="Run LangFuse only")
     group.add_argument("--human-redteam", action="store_true", help="Launch human red team session")
     group.add_argument("--encoded-only", action="store_true", help="Run encoded/obfuscated attack scan only")
-    group.add_argument("--many-shot-only", action="store_true", help="Run many-shot jailbreak scan only")
+    group.add_argument("--in-context-only", "--many-shot-only", dest="in_context_only", action="store_true", help="Run in-context attack scan only")
     group.add_argument("--multilingual-only", action="store_true", help="Run multilingual attack scan only")
     group.add_argument("--tool-inject-only", action="store_true", help="Run agentic tool-call injection scan only")
     group.add_argument("--backdoor-only", action="store_true", help="Run backdoor trigger scan only")
     group.add_argument("--rag-security-only", action="store_true", help="Run RAG/vector security scan only")
     group.add_argument("--agent-security-only", action="store_true", help="Run agentic security tests only")
     parser.add_argument("--garak-depth", default="standard",
-        choices=["quick", "standard", "all"],
+        choices=["quick", "standard", "reateam", "all"],
         help="Garak probe depth (default: standard)")
     parser.add_argument("--skip-pyrit", action="store_true", help="Skip PyRIT (slow)")
     parser.add_argument("--skip-ragas", action="store_true", help="Skip RAGAS (if no RAG app)")
@@ -199,13 +199,13 @@ def main():
         print("\n  [SKIPPED] Encoded attacks - use --encoded-only to run separately")
 
     # --- Step 9: Many-Shot Jailbreak --------------------------------------------
-    if args.many_shot_only or (not only_one and not args.skip_many_shot):
+    if args.in_context_only or (not only_one and not args.skip_many_shot):
         print_header("STEP 9 - Many-Shot Jailbreaks: In-Context Conditioning Attacks")
         print("  Testing pure-harmful, gradual-escalation, and camouflaged strategies...")
-        exit_codes.append(run([sys.executable, "many_shot/run_many_shot.py"]))
-        print("\n  Many-shot results saved to: results/many_shot/")
+        exit_codes.append(run([sys.executable, "in_context_attacks/run_many_shot.py"]))
+        print("\n  Many-shot results saved to: results/in_context_attacks/")
     elif not only_one and args.skip_many_shot:
-        print("\n  [SKIPPED] Many-shot jailbreaks - use --many-shot-only to run separately")
+        print("\n  [SKIPPED] Many-shot jailbreaks - use --in-context-only to run separately")
 
     # --- Step 10: Multilingual Attacks --------------------------------------------
     if args.multilingual_only or (not only_one and not args.skip_multilingual):
@@ -262,7 +262,7 @@ def main():
     print("  results/llm_guard/      - runtime scanner audit log")
     print("  results/human_redteam/  - human red team session logs")
     print("  results/encoded_attacks/ - encoded/obfuscated bypass test results")
-    print("  results/many_shot/      - many-shot jailbreak compliance matrix")
+    print("  results/in_context_only/      - many-shot jailbreak compliance matrix")
     print("  results/multilingual/   - cross-language safety bypass results")
     print("  results/tool_inject/    - agentic indirect prompt injection results")
     print("  results/backdoor/       - backdoor trigger amplification report")

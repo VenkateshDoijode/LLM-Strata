@@ -56,7 +56,21 @@ def main():
     print("\n[3/4] Installing dependencies...")
     run([pip, "install", "--upgrade", "pip"])
     run([pip, "install", "-r", "requirements.txt"])
-    print("  All packages installed.")
+
+    garak_venv = Path(".venv-garak")
+    if not garak_venv.exisits():
+        run([sys.executable, "-m","venv",str(garak_venv)])
+        print("  Garak virtual envirnment created at .venv-garak/")
+    else:
+        print("  .venv-garak already existins - skipping")
+
+    if sys.platform == "win32":
+        garak_pip = str(garak_venv / "Scripts" / "pip.exe")
+    else:
+        garak_pip = str(garak_venv / "bin" / "pip.exe")
+    run([garak_pip, "install", "--upgrade", "pip"])
+    run([garak_pip, "install", "-r", "requirements-garak.txt"])
+    print("  Main and Garak packages installed.")
 
     # --- Create results directories -----------------------------
     print("\n[4/4] Creating results directories...")
@@ -67,7 +81,7 @@ def main():
     Path("results/llm_guard").mkdir(parents=True, exist_ok=True)
     Path("results/human_redteam").mkdir(parents=True, exist_ok=True)
     Path("results/encoded_attacks").mkdir(parents=True, exist_ok=True)
-    Path("results/many_shot").mkdir(parents=True, exist_ok=True)
+    Path("results/in_context_attacks").mkdir(parents=True, exist_ok=True)
     Path("results/multilingual").mkdir(parents=True, exist_ok=True)
     Path("results/tool_inject").mkdir(parents=True, exist_ok=True)
     Path("results/backdoor").mkdir(parents=True, exist_ok=True)
@@ -79,7 +93,7 @@ def main():
     print("  results/llm_guard/     - LLM Guard audit logs")
     print("  results/human_redteam/ - Human red team session logs")
     print("  results/encoded_attacks/ - Encoded/obfuscated attack test results")
-    print("  results/many_shot/     - Many-shot jailbreak compliance matrix")
+    print("  results/in_context_attacks/     - In-Context attack jailbreak compliance matrix")
     print("  results/multilingual/  - Cross-language safety bypass results")
     print("  results/tool_inject/   - Agentic indirect prompt injection results")
     print("  results/backdoor/      - Backdoor trigger amplification report")

@@ -145,7 +145,7 @@ encoded_attacks:
 many-shot:
   extends: .attack_base
   script:
-    - python many_shot/run_many_shot.py
+    - python in_context_only/run_many_shot.py
   timeout: 30m
   rules:
     - if: $SKIP_MANY_SHOT == "true"
