@@ -1,4 +1,4 @@
-# LLM Strata
+# LLM Strata (AI LLM Safety and Security Testing Framework)
 
 **An open-source, end-to-end framework for testing the security, safety, reliability, and behavioral robustness of LLM and AI applications.**
 
