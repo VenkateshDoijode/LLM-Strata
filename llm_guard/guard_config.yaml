@@ -1,0 +1,112 @@
+# ==============================================================================
+# LLM Guard - Runtime Input/Output Protection Configuration
+# Docs: https://llm-guard.com
+# ==============================================================================
+
+# WHAT IS LLM GUARD?
+#   LLM Guard sits between your user and the LLM at runtime.
+#   It scans every request (input) and every response (output) in real-time,
+#   blocking or sanitizing anything dangerous before it causes harm.
+
+# HOW IT WORKS:
+#   User Request -> [Input Scanners] -> LLM -> [Output Scanners] -> Safe Response
+
+# HOW TO RUN:
+#   python llm_guard/run_guard.py          # demo mode (test scanners)
+#   python llm_guard/app.py                # start as a proxy API server
+
+# ----------------------- Input Scanners--------------------------------------------
+# Applied to every user message BEFORE it reaches the LLM.
+# Blocks or flags dangerous inputs.
+input_scanners:
+
+  # Detects prompt injection attempts
+  # e.g., "Ignore all previous instructions and..."
+  PromptInjection:
+    enabled: true
+    threshold: 0.75          # confidence threshold (0..1). Lower = more sensitive.
+    action: block            # block - reject request | warn - allow but log
+
+  # Detects and removes PII from user inputs before sending to LLM
+  # Prevents accidentally leaking user data to the model/logs
+  Anonymize:
+    enabled: true
+    recognizers:             # entity_types passed to Anonymize(entity_types=[...])
+      - EMAIL_ADDRESS
+      - PHONE_NUMBER
+      - CREDIT_CARD
+      - US_SSN
+      - IP_ADDRESS
+      - PERSON               # names
+
+  # Blocks inputs about banned topics (hard rules your app must never discuss)
+  BanTopics:
+    enabled: true
+    topics:
+      - "weapons of mass destruction"
+      - "child exploitation"
+      - "synthesizing illegal drugs"
+    threshold: 0.75
+
+  # Blocks known malicious prompt patterns
+  BanSubstrings:
+    enabled: true
+    substrings:
+      - "ignore all previous instructions"
+      - "ignore your system prompt"
+      - "you are now DAN"
+      - "jailbreak"
+    case_sensitive: false
+    match_type: word         # word - whole word match | str - substring match
+
+  # Detects toxic / hateful language in user inputs
+  Toxicity:
+    enabled: true
+    threshold: 0.75          # block inputs above this toxicity score
+
+# ---------------------------- Output Scanners ---------------------------------------
+# Applied to every LLM response BEFORE it is returned to the user.
+# Strips or blocks dangerous outputs.
+output_scanners:
+
+  # Detects and removes sensitive/PII data accidentally included in LLM output
+  # e.g., names, emails, SSNs leaked by the model. Uses redact=True to mask them.
+  Sensitive:
+    enabled: true
+    # Note: Sensitive scanner uses redact=True (bool), not redact_mode string
+
+  # Strips PII from LLM responses before returning to user
+  Deanonymize:
+    enabled: true            # works with Anonymize input scanner to restore safe output
+
+  # Detects toxic content in LLM output
+  Toxicity:
+    enabled: true
+    threshold: 0.75
+
+  # Detects if LLM is revealing its system prompt
+  # Catches: "My instructions are...", "You told me to..."
+  NoRefusal:
+    enabled: false           # enable if your app should never refuse requests
+
+  # Detects hallucinated/fabricated URLs in the output
+  # NOTE: URLReachability is not yet wired into build_scanners() in run_guard.py.
+  URLReachability:
+    enabled: false           # disabled until instantiated in build_scanners()
+
+  # Scores factual relevance of response against the original question
+  Relevance:
+    enabled: true
+    threshold: 0.5           # response must be at least 50% relevant to input
+
+# ---------------------------- Global Settings ---------------------------- 
+settings:
+  # What to do when a scanner triggers:
+  #   block - reject and return error to user
+  #   warn  - allow but log the violation
+  #   redact - sanitize and allow (where applicable)
+  default_action: block
+
+  # Log all scanner results (even passes) for audit trail
+  audit_logging: true
+  log_file: results/llm_guard_audit.log

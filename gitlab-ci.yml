@@ -1,0 +1,218 @@
+# .gitlab-ci.yml - LLM Strata: GitLab CI/CD Security & Safety Pipeline
+#
+# Author : Venkateshwara Doijode
+# Project : LLM Strata - End-to-End LLM Security & Safety Framework
+#
+# --- Required GitLab CI/CD Variables (Settings > CI/CD > Variables) ---------
+#   OPENAI_API_KEY          - required, mask it
+#   LANGFUSE_PUBLIC_KEY      - optional, mask it (monitor stage only)
+#   LANGFUSE_SECRET_KEY      - optional, mask it (monitor stage only)
+#
+# --- Optional Skip Variables ---------
+#   ACTIVE_PROFILE     - default: cost_optimized (see profiles.yaml)
+#   SKIP_RAGAS          - set "true" to skip if not needed for RAG apps)
+#   SKIP_PYRIT          - set "true" to skip (slow, agentic - ~30 min)
+#   SKIP_LANGFUSE       - set "true" to skip monitoring stage
+#   SKIP_ENCODED        - set "true" to skip encoded/obfuscated attack scan
+#   SKIP_MANY_SHOT       - set "true" to skip many-shot jailbreak scan
+#   SKIP_MULTILINGUAL    - set "true" to skip multilingual attack scan
+#   SKIP_TOOL_INJECT     - set "true" to skip agentic tool-call injection scan
+#   SKIP_BACKDOOR        - set "true" to skip backdoor trigger scan
+#   SKIP_RAG_SECURITY    - set "true" to skip RAG/vector security scan
+#
+# --- Pipeline Overview ---------------------------------------------------
+# Stage: scan       - core safety & vulnerability tools (parallel)
+#   garak            - vulnerability scan + red teaming    (allow_failure)
+#   deepeval         - safety testing (bias, toxicity, hallucination, PII)
+#   ragas            - RAG pipeline safety (skip if no RAG app)
+#   pyrit            - multi-turn agentic red teaming        (slow: 30 min)
+#   llm-guard        - runtime input/output protection demo
+#
+# Stage: attack     - advanced attack simulation (parallel, after scan)
+#   encoded_attacks  - 12 encoding methods x 6 attack categories
+#   many-shot        - in-context conditioning (3 strategies x 4 shot counts)
+#   multilingual     - 9 languages x 3 techniques
+#   tool-inject      - agentic indirect prompt injection
+#   backdoor         - 17 trigger patterns, amplification measurement
+#   rag-security     - 9 RAG/vector attack scenarios (OWASP LLM08)
+#
+# Stage: monitor    - production monitoring (non-blocking)
+#   langfuse         - only runs if LANGFUSE_PUBLIC_KEY + SECRET_KEY are set
+#
+# --- Human Red Team -----------------------------------------------------
+#   Excluded from CI (interactive session - run manually before releases):
+#   python run_security.py --human-redteam
+# ---------------------------------------------------------------------------
+
+stages:
+  - scan
+  - attack
+  - monitor
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  ACTIVE_PROFILE: "cost_optimized"
+  PYTHONUNBUFFERED: "1"
+
+cache:
+  key: "pip-$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip/
+
+# --- Shared base for all scan jobs ------------------------------------
+.scan_base:
+  stage: scan
+  image: python:3.11-slim
+  before_script:
+    - pip install --upgrade pip -q
+    - pip install -r requirements.txt -q
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - results/
+
+# --- Garak: Vulnerability Scanner + Red Teaming ------------------------
+garak:
+  extends: .scan_base
+  script:
+    - python garak/run_garak.py --probes quick
+  timeout: 20m
+  allow_failure: true   # Garak can be flaky on shared runners; results still saved
+
+# --- DeepEval: Safety Testing ------------------------------------------
+deepeval:
+  extends: .scan_base
+  script:
+    - python deepeval/run_deepeval.py
+  timeout: 15m
+
+# --- RAGAS: RAG Pipeline Safety ------------------------------------------
+ragas:
+  extends: .scan_base
+  script:
+    - python ragas/run_ragas.py
+  timeout: 15m
+  rules:
+    - if: $SKIP_RAGAS == "true"
+      when: never
+    - when: always
+
+# --- PyRIT: Multi-turn Agentic Red Teaming ------------------------------------------
+pyrit:
+  extends: .scan_base
+  script:
+    - python pyrit/run_pyrit.py
+  timeout: 30m
+  rules:
+    - if: $SKIP_PYRIT == "true"
+      when: never
+    - when: always
+
+# --- LLM Guard: Runtime Protection Demo ------------------------------------------
+llm-guard:
+  extends: .scan_base
+  script:
+    - python llm_guard/run_llm_guard.py
+  timeout: 10m
+
+# --- Shared base for all attack-stage jobs ------------------------------------
+.attack_base:
+  stage: attack
+  image: python:3.11-slim
+  before_script:
+    - pip install --upgrade pip -q
+    - pip install -r requirements.txt -q
+  allow_failure: true   # Attack tests are advisory - never block a release
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - results/
+
+# --- Encoded & Obfuscated Attacks ------------------------------------------
+encoded_attacks:
+  extends: .attack_base
+  script:
+    - python encoded_attacks/run_encoded_attacks.py
+  timeout: 20m
+  rules:
+    - if: $SKIP_ENCODED == "true"
+      when: never
+    - when: always
+
+# --- Many-Shot Jailbreaks ------------------------------------------
+many-shot:
+  extends: .attack_base
+  script:
+    - python many_shot/run_many_shot.py
+  timeout: 30m
+  rules:
+    - if: $SKIP_MANY_SHOT == "true"
+      when: never
+    - when: always
+
+# --- Multilingual Attacks ------------------------------------------
+multilingual:
+  extends: .attack_base
+  script:
+    - python multilingual/run_multilingual.py
+  timeout: 25m
+  rules:
+    - if: $SKIP_MULTILINGUAL == "true"
+      when: never
+    - when: always
+
+# --- Agentic Tool-Call Injection ------------------------------------------
+tool-inject:
+  extends: .attack_base
+  script:
+    - python tool_inject/run_tool_inject.py
+  timeout: 15m
+  rules:
+    - if: $SKIP_TOOL_INJECT == "true"
+      when: never
+    - when: always
+
+# --- Backdoor / Trojan Trigger Testing ------------------------------------------
+backdoor:
+  extends: .attack_base
+  script:
+    - python backdoor/run_backdoor.py
+  timeout: 30m
+  rules:
+    - if: $SKIP_BACKDOOR == "true"
+      when: never
+    - when: always
+
+# --- RAG / Vector Security (OWASP LLM08) ------------------------------------------
+rag-security:
+  extends: .attack_base
+  script:
+    - python rag_security/run_rag_security.py
+  timeout: 15m
+  rules:
+    - if: $SKIP_RAG_SECURITY == "true"
+      when: never
+    - when: always
+
+# --- LangFuse: Production Monitoring ------------------------------------------
+langfuse:
+  stage: monitor
+  image: python:3.11-slim
+  before_script:
+    - pip install --upgrade pip -q
+    - pip install -r requirements.txt -q
+  script:
+    - python langfuse/run_langfuse.py
+  timeout: 10m
+  allow_failure: true   # Never block a pipeline on monitoring
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - results/
+  rules:
+    - if: $LANGFUSE_PUBLIC_KEY && $LANGFUSE_SECRET_KEY && $SKIP_LANGFUSE != "true"
+      when: always
+    - when: never

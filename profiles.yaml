@@ -1,0 +1,129 @@
+# ====================================================================
+# profiles.yaml - Model Profile Selection for LLM Strata
+# ====================================================================
+#
+# WHAT IS THIS?
+#   A single file to switch the LLM model used across ALL security modules.
+#   Change active_profile (or set ACTIVE_PROFILE env var) and every tool
+#   picks up the new model automatically - no per-module YAML edits needed.
+#
+# HOW TO USE:
+#   1. Change active_profile below, then run: python run_security.py
+#   2. Override at runtime: $env:ACTIVE_PROFILE="redteam"; python run_security.py
+#
+# PROFILES:
+#   production          - OpenAI gpt-4o for real-world security assessments
+#   cost_optimized      - OpenAI gpt-4o-mini for quick scans and CI/CD
+#   azure               - Azure OpenAI (enterprise, data residency, compliance)
+#   local               - Ollama local model - no API key required
+#   private_compatible  - Private/on-prem OpenAI-compatible endpoint
+#   gemini              - Google Gemini (OpenAI-compatible endpoint)
+#   anthropic           - Anthropic Claude via LiteLLM
+#   bedrock             - AWS Bedrock via LiteLLM (Claude / Llama on AWS)
+#   huggingface         - Hugging Face Inference API (open-source models)
+#   redteam             - Aggressive red team with strongest available model
+#
+# PRIORITY ORDER (highest to lowest):
+#   ACTIVE_PROFILE env var -> active_profile here -> each module's YAML -> code default
+#
+# PROVIDER OPTIONS: openai | azure | ollama | openai_compatible | gemini | huggingface | anthropic | bedrock
+#
+# NOTE: PyRIT uses separate attacker_model + scorer_model roles.
+#       Set them independently per profile for best red team coverage.
+# ====================================================================
+
+active_profile: cost_optimized
+
+profiles:
+
+  production:
+    provider: openai
+    model: gpt-4o                   # model under test (all modules)
+    judge_model: gpt-4o             # RAGAS: faithfulness + relevancy judge
+    evaluator_model: gpt-4o         # DeepEval: safety metric judge
+    attacker_model: gpt-4o          # PyRIT: generates adversarial prompts
+    scorer_model: gpt-4o            # PyRIT + LangFuse: judges attack / scores traces
+
+  cost_optimized:
+    provider: openai
+    model: gpt-4o-mini              # model under test (all modules)
+    judge_model: gpt-4o-mini        # RAGAS: faithfulness + relevancy judge
+    evaluator_model: gpt-4o-mini    # DeepEval: safety metric judge
+    attacker_model: gpt-4o-mini     # PyRIT: generates adversarial prompts
+    scorer_model: gpt-4o-mini       # PyRIT + LangFuse: judges attack / scores traces
+
+  azure:
+    provider: azure
+    model: my-gpt4o-deployment      # replace with your Azure deployment name
+    judge_model: my-gpt4o-mini-dep
+    evaluator_model: my-gpt4o-mini-dep
+    attacker_model: my-gpt4o-deployment
+    scorer_model: my-gpt4o-mini-dep
+    # Required env vars: AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT
+
+  local:
+    provider: ollama
+    model: llama3.2                 # requires: ollama run llama3.2
+    judge_model: llama3.2
+    evaluator_model: llama3.2
+    attacker_model: llama3.2
+    scorer_model: llama3.2
+    # Optional env var: OLLAMA_BASE_URL (default: http://localhost:11434/v1)
+
+  private_compatible:
+    provider: openai_compatible
+    model: local-model            # replace with your server's model name
+    judge_model: local-model
+    evaluator_model: local-model
+    attacker_model: local-model
+    scorer_model: local-model
+    base_url: http://localhost:8000/v1
+    api_key_required: false
+    # For a protected endpoint, set api_key_required: true and
+    # OPENAI_COMPATIBLE_API_KEY in the environment.
+
+  anthropic:
+    provider: anthropic
+    model: claude-opus-4-5        # Claude via LiteLLM (pip install litellm)
+    judge_model: claude-haiku-4-5
+    evaluator_model: claude-haiku-4-5
+    attacker_model: claude-opus-4-5
+    scorer_model: claude-haiku-4-5
+    # Required env var: ANTHROPIC_API_KEY
+
+  gemini:
+    provider: gemini
+    model: gemini-2.0-flash       # fast, cost-effective Gemini model
+    judge_model: gemini-2.0-flash
+    evaluator_model: gemini-2.0-flash
+    attacker_model: gemini-2.5-pro # strongest Gemini for red teaming
+    scorer_model: gemini-2.0-flash
+    # Required env var: GEMINI_API_KEY (free at aistudio.google.com)
+
+  bedrock:
+    provider: bedrock
+    model: anthropic.claude-3-5-sonnet-20241022-v2:0  # Claude on AWS
+    judge_model: anthropic.claude-3-haiku-20240307-v1:0
+    evaluator_model: anthropic.claude-3-haiku-20240307-v1:0
+    attacker_model: anthropic.claude-3-5-sonnet-20241022-v2:0
+    scorer_model: anthropic.claude-3-haiku-20240307-v1:0
+    # Required: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION_NAME
+    # Also requires: pip install litellm boto3
+
+  huggingface:
+    provider: huggingface
+    model: meta-llama/Llama-3.1-70B-Instruct
+    judge_model: meta-llama/Llama-3.1-70B-Instruct
+    evaluator_model: meta-llama/Llama-3.1-70B-Instruct
+    attacker_model: meta-llama/Llama-3.1-70B-Instruct
+    scorer_model: meta-llama/Llama-3.1-8B-Instruct
+    # Required env var: HF_TOKEN (huggingface.co/settings/tokens)
+    # Model must have Inference API enabled on huggingface.co
+
+  redteam:
+    provider: openai
+    model: gpt-4o                 # strongest model as target (hardest test)
+    judge_model: gpt-4o-mini
+    evaluator_model: gpt-4o-mini
+    attacker_model: gpt-4o        # strongest attacker for max coverage
+    scorer_model: gpt-4o-mini

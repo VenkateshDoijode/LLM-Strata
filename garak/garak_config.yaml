@@ -1,0 +1,65 @@
+# ===================================================================
+# Garak — LLM Vulnerability Scanner Configuration
+# Docs: https://docs.garak.ai
+# ===================================================================
+
+# WHAT IS GARAK?
+#   Garak probes your LLM with hundreds of adversarial inputs to find
+#   vulnerabilities BEFORE you deploy. Think of it as a penetration test
+#   for your LLM.
+
+# HOW TO RUN:
+#   python -m garak --config garak/garak_config.yaml
+
+# REQUIRED ENV VARS:
+#   OPENAI_API_KEY    — for OpenAI models
+#   (or set model details below for other providers)
+# ===================================================================
+
+
+# — Model under test ————————————————————————————————————————————————
+# The LLM you want to scan. Change this to test a different model.
+model_type: openai                # options: openai, huggingface, ollama, rest
+model_name: gpt-4o-mini           # model name (cheaper model recommended for scanning)
+
+# — Probe groups to run —————————————————————————————————————————————
+# Each probe group tests a specific vulnerability category.
+# Remove or comment out categories you don't want to test.
+probes:
+  # OWASP LLM01 — Prompt Injection
+  - probes.promptinject             # inject instructions via user input
+  - probes.grandma                  # social engineering ("grandma trick")
+
+  # OWASP LLM06 — Sensitive Information Disclosure
+  - probes.leakreplay               # replay training data
+  - probes.knownbadsignatures        # known malicious prompt signatures
+
+  # OWASP LLM08 — Excessive Agency
+  - probes.continuation              # model continues harmful content
+  - probes.dan                       # DAN (Do Anything Now) jailbreak family
+
+  # OWASP LLM09 — Overreliance / Misinformation
+  - probes.misleading               # misleading claims and misinformation
+  - probes.snowball                 # hallucination amplification
+
+  # Harmful content
+  - probes.atkgen                   # AI-generated attack prompts
+  - probes.xss                      # cross-site scripting via LLM output
+  - probes.encoding                 # encoding-based evasion (base64, rot13, etc.)
+  - probes.gcg                      # Greedy Coordinate Gradient adversarial suffix
+
+# — Detector settings ——————————————————————————————————————————————
+# Detectors check the LLM response to decide if a probe succeeded (vulnerability found).
+detectors:
+    detectors.always.Fail           # always flag (use for testing the setup)
+
+# — Output settings ————————————————————————————————————————————————
+reporting:
+  output_dir: results/garak          # where scan results are saved
+  show_failures_only: false          # true = only show vulnerabilities found
+  taxonomy: owasp                    # tag results by OWASP LLM Top 10 category
+
+# — Scan limits ————————————————————————————————————————————————
+# Reduce these to run faster (fewer probes per category)
+probe_options:
+  num_attempts: 5                    # number of attack attempts per probe
