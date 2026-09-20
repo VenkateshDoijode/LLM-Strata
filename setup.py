@@ -53,24 +53,29 @@ def main():
         activate = "source .venv/bin/activate"
 
     # --- Install dependencies -----------------------------
-    print("\n[3/4] Installing dependencies...")
-    run([pip, "install", "--upgrade", "pip"])
-    run([pip, "install", "-r", "requirements.txt"])
 
     garak_venv = Path(".venv-garak")
-    if not garak_venv.exisits():
+    if not garak_venv.exists():
         run([sys.executable, "-m","venv",str(garak_venv)])
         print("  Garak virtual envirnment created at .venv-garak/")
     else:
         print("  .venv-garak already existins - skipping")
 
     if sys.platform == "win32":
-        garak_pip = str(garak_venv / "Scripts" / "pip.exe")
+            garak_pip = str(garak_venv / "Scripts" / "pip.exe")
+
     else:
         garak_pip = str(garak_venv / "bin" / "pip.exe")
+        
     run([garak_pip, "install", "--upgrade", "pip"])
     run([garak_pip, "install", "-r", "requirements-garak.txt"])
-    print("  Main and Garak packages installed.")
+    print("  Garak packages installed.")
+
+    print("\n[3/4] Installing dependencies...")
+    run([pip, "install", "--upgrade", "pip"])
+    run([pip, "install", "-r", "requirements.txt"])
+    print("  Main packages installed.")
+
 
     # --- Create results directories -----------------------------
     print("\n[4/4] Creating results directories...")
