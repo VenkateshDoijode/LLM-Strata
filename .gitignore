@@ -1,5 +1,5 @@
 # Environment variables — never commit
-.env
+#.env
 
 # Virtual environment
 .venv/
@@ -9,5 +9,3 @@ __pycache__/
 *.pyc
 *.pyo
 
-# Results (optional — remove these lines if you want to track results in git)
-results/
