@@ -4,7 +4,9 @@
 # Project : LLM Strata - End-to-End LLM Security & Safety Framework
 #
 # --- Required GitLab CI/CD Variables (Settings > CI/CD > Variables) ---------
-#   OPENAI_API_KEY          - required, mask it
+#
+#   Credentials for the active profile.yaml
+#
 #   LANGFUSE_PUBLIC_KEY      - optional, mask it (monitor stage only)
 #   LANGFUSE_SECRET_KEY      - optional, mask it (monitor stage only)
 #
@@ -72,13 +74,17 @@ cache:
     paths:
       - results/
 
-# --- Garak: Vulnerability Scanner + Red Teaming ------------------------
+# ─── Garak: Vulnerability Scanner + Red Teaming ─────────────────────
 garak:
   extends: .scan_base
+  before_script:
+    - pip install --upgrade pip -q
+    - pip install -r requirements.txt -q
+    - pip install -r requirements-garak.txt -q
   script:
-    - python garak/run_garak.py --probes quick
+    - GARAK_PYTHON="$(python -c 'import sys; print(sys.executable)')" python garak/run_garak.py --probes quick
   timeout: 20m
-  allow_failure: true   # Garak can be flaky on shared runners; results still saved
+  allow_failure: true      # Garak can be flaky on shared runners; results still saved
 
 # --- DeepEval: Safety Testing ------------------------------------------
 deepeval:
