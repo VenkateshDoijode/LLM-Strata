@@ -142,7 +142,7 @@ Configure the applicable provider variables in `.env` or in the operating-system
 
 > ✅ **Select any one provider of your choice — you don't need to set up all of them.** Configure only the variables required by the provider/profile you plan to use.
 
-For production monitoring, also set `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`. Operating-system variables take precedence over `.env` values. Never commit `.env`, API keys, provider endpoints containing credentials, or generated reports. See [Providers and Secrets](docs/providers-and-secrets.md) for the full provider matrix and precedence rules.
+For production monitoring, also set `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`. Operating-system variables take precedence over `.env` values. Never commit `.env`, API keys, provider endpoints containing credentials, or generated reports. See [Providers and Secrets](Docs/providers-and-secrets.md) for the full provider matrix and precedence rules.
 
 ### 🎛️ Select a model profile
 
@@ -202,7 +202,7 @@ The framework can assess these deployment contexts when the target is reachable 
 - 🌐 Multi-Cloud LLM
 - 🧱 Embedded/Application LLM
 
-> 💡 The framework supports OpenAI-compatible endpoints and selected LiteLLM-backed providers. Additional LiteLLM providers can be integrated through `client_factory.py` and `profiles.yaml`. See [Providers and Secrets](docs/providers-and-secrets.md).
+> 💡 The framework supports OpenAI-compatible endpoints and selected LiteLLM-backed providers. Additional LiteLLM providers can be integrated through `client_factory.py` and `profiles.yaml`. See [Providers and Secrets](Docs/providers-and-secrets.md).
 
 ## 🔄 CI/CD
 
@@ -229,12 +229,12 @@ The pipeline stores reports under `results/` as CI artifacts. Review reports rat
 
 | Guide | Description |
 |---|---|
-| 🏗️ [Architecture](docs/architecture.md) | Pipeline phases, trust boundaries, and data flow |
-| 🎯 [Threat model](docs/threat-model.md) | Assets, actors, assumptions, and coverage boundaries |
-| 🔑 [Providers and secrets](docs/providers-and-secrets.md) | Profiles, credentials, endpoints, and provider integration |
-| 🔄 [CI/CD operations](docs/ci-cd.md) | Stages, variables, artifacts, and release guidance |
-| 🧾 [Results and triage](docs/results-and-triage.md) | Outcome interpretation and remediation workflow |
-| 🏭 [Production integration](docs/production-integration.md) | Runtime enforcement and monitoring integration |
+| 🏗️ [Architecture](Docs/architecture.md) | Pipeline phases, trust boundaries, and data flow |
+| 🎯 [Threat model](Docs/threat-model.md) | Assets, actors, assumptions, and coverage boundaries |
+| 🔑 [Providers and secrets](Docs/providers-and-secrets.md) | Profiles, credentials, endpoints, and provider integration |
+| 🔄 [CI/CD operations](Docs/ci-cd.md) | Stages, variables, artifacts, and release guidance |
+| 🧾 [Results and triage](Docs/results-and-triage.md) | Outcome interpretation and remediation workflow |
+| 🏭 [Production integration](Docs/production-integration.md) | Runtime enforcement and monitoring integration |
 
 ## 📁 Project structure
 
@@ -263,7 +263,7 @@ LLM-Strata/
 ├── backdoor/                # Layer 12
 ├── rag_security/            # Layer 13
 ├── agent_security/          # Layer 14
-├── docs/                    # Threat model, architecture, CI/CD, triage, integration
+├── Docs/                    # Threat model, architecture, CI/CD, triage, integration
 └── results/                 # Generated reports 
 ```
 
