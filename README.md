@@ -1,450 +1,242 @@
-# LLM Strata (AI LLM Safety and Security Testing Framework)
+# 🛡️ LLM Strata — AI/LLM Security & Safety Testing Framework
 
-**An open-source, end-to-end framework for testing the security, safety, reliability, and behavioral robustness of LLM and AI applications.**
+[![Python 3.10-3.14](https://img.shields.io/badge/python-3.10--3.14-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Apache 2.0 License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![GitLab CI](https://img.shields.io/badge/pipeline-GitLab%20CI-FC6D26?logo=gitlab&logoColor=white)](.gitlab-ci.yml)
+[![OWASP LLM Top 10](https://img.shields.io/badge/OWASP-LLM%20Top%2010-000000?logo=owasp&logoColor=white)](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+[![Modules](https://img.shields.io/badge/security%20layers-14-8A2BE2)](#-security-and-safety-capability-map)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/VenkateshDoijode/LLM-Strata/pulls)
 
-LLM Strata is a collection of independent security and safety test layers. The layers share provider profiles, credential loading, and report conventions, so you can switch the model under test with one setting and run every layer against it.
+## 🎯 Objective
 
----
+LLMs are powerful — but they can be manipulated, abused, and exploited in ways traditional software cannot.
+**LLM Strata** is a Python framework for testing and monitoring LLM-powered applications across their lifecycle. It provides configurable coverage; it does not guarantee detection of every attack or replace production authorization controls:
 
-## Table of contents
+- 🔍 **Before deployment** — find vulnerabilities, safety gaps, and adversarial weaknesses
+- 🚧 **At runtime** — demonstrate input/output scanning and policy controls that applications can integrate in real-time
+- 📈 **In production** — continuously monitor for safety drift and suspicious behaviour
 
-- [Features](#features)
-- [Test layers](#test-layers)
-- [Compatibility](#compatibility)
-- [Supported providers](#supported-providers)
-- [Quick start](#quick-start)
-- [Usage](#usage)
-- [Configuration reference](#configuration-reference)
-- [Architecture](#architecture)
-- [Data handling](#data-handling)
-- [Threat model and scope](#threat-model-and-scope)
-- [Production integration](#production-integration)
-- [CI/CD](#cicd)
-- [Project structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+LLM Strata is a collection of independent security and safety test layers. The layers share provider profiles, credential loading, and report conventions, so you can switch the model under test with one setting and run every layer against it.This framework provides configurable coverage across documented LLM security and safety threat categories using 14 modules.
 
----
+## 💡 Why This Project is Useful
 
-## Features
+### 👩‍💻 For Developers
 
-- **14 test layers** covering vulnerability scanning, safety evaluation, RAG security, agentic security, adversarial red teaming, runtime protection, and production monitoring.
-- **One profile file** (`profiles.yaml`) switches the model used by every module. No per-module YAML edits are needed.
-- **Ten provider profiles** across cloud, enterprise, local, and private endpoints.
-- **Separate model roles** for the target, judge, evaluator, attacker, and scorer, so you can use independent evaluator models for high-confidence assessments.
-- **Simulation-first design.** Tool-injection and RAG-security tests run against simulated tool results and retrieved context, so no real tools or vector databases are touched.
-- **CI-ready.** A `--ci` mode, skip variables, and a `--dry-run` mode make the pipeline easy to automate.
-- **Cross-platform.** Runs on Windows and Linux.
+- Assess selected **OWASP LLM Top 10** threat categories before release
+- Identify jailbreak, prompt-injection, and harmful-output risks before deployment
+- Run the configured security pipeline through one orchestrator command: `python run_security.py`
 
----
+### 🔐 For Security Teams
 
-## Test layers
+- Run structured automated and human red-team exercises with logged, scored results
+- Map instrumented tests to documented **OWASP LLM Top 10** threat categories
+- Replace ad-hoc testing with a repeatable workflow and reviewable evidence
 
-| Layer | Name | Module | Guide | Purpose |
-|---|---|---|---|---|
-| 1 | Garak | `garak/run_garak.py` | [garak.md](garak/garak.md) | Vulnerability scanning and red teaming before deployment |
-| 2 | DeepEval | `deepeval/run_deepeval.py` | [deepeval.md](deepeval/deepeval.md) | Safety testing: bias, toxicity, hallucination, PII, prompt injection |
-| 3 | RAGAS | `ragas/run_ragas.py` | [ragas.md](ragas/ragas.md) | RAG pipeline quality and safety: context poisoning, faithfulness |
-| 4 | PyRIT | `pyrit/run_pyrit.py` | [pyrit.md](pyrit/pyrit.md) | Multi-turn, goal-directed agentic red teaming |
-| 5 | LLM Guard | `llm_guard/run_guard.py` | [llm-guard.md](llm_guard/llm-guard.md) | Runtime input/output scanner demonstration |
-| 6 | LangFuse | `langfuse/run_langfuse.py` | [langfuse.md](langfuse/langfuse.md) | Production monitoring, tracing, and scoring |
-| 7 | Human Red Team | `human_redteam/run_redteam.py` | [human-redteam.md](human_redteam/human-redteam.md) | Interactive manual attack sessions |
-| 8 | Encoded Attacks | `encoded_attacks/run_encoded_attacks.py` | [encoded-attacks.md](encoded_attacks/encoded-attacks.md) | Base64, ROT13, hex, Morse, leetspeak, homoglyphs, and similar obfuscation |
-| 9 | Many-Shot Jailbreaks | `many_shot/run_many_shot.py` | [many-shot.md](many_shot/many-shot.md) | In-context conditioning: pure-harmful, gradual-escalation, and camouflaged strategies |
-| 10 | Multilingual Attacks | `multilingual/run_multilingual.py` | [multilingual.md](multilingual/multilingual.md) | Cross-language safety bypass (Arabic, Chinese, Russian, Hindi, Spanish, French, German, and more) |
-| 11 | Tool-Call Injection | `tool_inject/run_tool_inject.py` | [tool-injection.md](tool_inject/tool-injection.md) | Indirect prompt injection through search, file, database, email, and calendar results |
-| 12 | Backdoor Triggers | `backdoor/run_backdoor.py` | [backdoor.md](backdoor/backdoor.md) | Trojan phrase amplification (DAN, authority, and roleplay triggers) |
-| 13 | RAG Security | `rag_security/run_rag_security.py` | [rag-security.md](rag_security/rag-security.md) | Vector and embedding weaknesses (OWASP LLM08) |
-| 14 | Agent Security | `agent_security/run_agent_security.py` | [agent-security.md](agent_security/agent-security.md) | Multi-turn attacks, tool authorization, and memory isolation |
+### 🧠 For AI/ML Teams
+
+- Evaluate configured RAG safety cases, including context poisoning and grounding risks
+- Score selected safety metrics and save structured JSON reports
+- Connect supported providers through profiles and module configuration
+
+### 🏭 For Production Systems
+
+- Use LLM Guard as a reference for local input/output scanning and control benchmarking
+- Send instrumented requests and safety scores to LangFuse
+- Review safety trends over time to identify potential drift
 
 ---
 
-## Compatibility
+## ⚙️ Capabilities
 
-| Item | Support |
-|---|---|
-| Operating systems | Windows and Linux |
-| Python | 3.9 or later |
-| API style | OpenAI-compatible clients, plus LiteLLM for Anthropic and AWS Bedrock |
-| Local models | Ollama and any OpenAI-compatible server |
-| CI systems | GitLab CI (pipeline definition included); other systems can call `run_security.py --ci` |
+| Capability | Purpose | Typical use |
+|---|---|---|
+| 🧪 Pre-deployment assessment | Identify prompt injection, jailbreak, leakage, misuse, and safety weaknesses | Pull requests, release candidates, scheduled assessments |
+| ⚔️ Adversarial attack simulation | Exercise encoded, multilingual, in-context, agentic, backdoor, and RAG attack paths | Security validation and red-team exercises |
+| 🚧 Runtime reference controls | Demonstrate local input/output scanning and policy checks for application integration | Control benchmarking and defense-in-depth validation |
+| 📡 Production monitoring | Capture traces and safety scores for instrumented requests | Drift detection and operational review |
+| 🧾 Evidence and reporting | Persist structured JSON results and CI artifacts | Triage, audit evidence, and remediation tracking |
 
----
+## 🗺️ Security and Safety Capability Map
 
-## Supported providers
+LLM Strata is composed of 14 independent security and safety layers. Each layer has its own runner, configuration, outputs, and direct command, so it can be executed independently or as part of the full pipeline. The layers share provider, profile, and reporting utilities while remaining independently configurable.
 
-Every provider is configured as a profile in `profiles.yaml`.
+The framework combines pre-deployment testing, runtime scanning, agent/RAG security tests, human review, and production monitoring. Coverage is configurable and should be interpreted as evidence from the selected test corpus—not as a guarantee of complete protection.
 
-| Profile | Provider value | Default model | Required environment variables | Notes |
-|---|---|---|---|---|
-| `production` | `openai` | `gpt-4o` | `OPENAI_API_KEY` | Real-world security assessments |
-| `cost_optimized` (default) | `openai` | `gpt-4o-mini` | `OPENAI_API_KEY` | Quick scans and CI/CD |
-| `azure` | `azure` | Your deployment name | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` | Enterprise, data residency, compliance |
-| `local` | `ollama` | `llama3.2` | None (optional `OLLAMA_BASE_URL`) | No API key needed; run `ollama run llama3.2` first |
-| `private_compatible` | `openai_compatible` | `local-model` | `OPENAI_COMPATIBLE_API_KEY` if the endpoint is protected | Private or on-premises OpenAI-compatible endpoint |
-| `gemini` | `gemini` | `gemini-2.0-flash` | `GEMINI_API_KEY` | Uses Google's OpenAI-compatible endpoint |
-| `anthropic` | `anthropic` | `claude-opus-4-5` | `ANTHROPIC_API_KEY` | Via LiteLLM |
-| `bedrock` | `bedrock` | `anthropic.claude-3-5-sonnet-20241022-v2:0` | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME` | Via LiteLLM and `boto3` |
-| `huggingface` | `huggingface` | `meta-llama/Llama-3.1-70B-Instruct` | `HF_TOKEN` | The model must have the Inference API enabled |
-| `redteam` | `openai` | `gpt-4o` (target and attacker) | `OPENAI_API_KEY` | Strongest available models for maximum coverage |
+- 🧪 **Pre-deployment:** [Garak](garak/garak.md), [DeepEval](deepeval/deepeval.md), [RAGAS](ragas/ragas.md), [PyRIT](pyrit/pyrit.md)
+- 📡 **Runtime and monitoring:** [LLM Guard](llm_guard/llm-guard.md), [LangFuse](langfuse/langfuse.md)
+- 🕵️ **Human and advanced attacks:** [Human Red Team](human_redteam/human-redteam.md), [Encoded Attacks](encoded_attacks/encoded-attacks.md), [In-Context Attacks](in_context_attacks/in-context-attacks.md), [Multilingual Attacks](multilingual/multilingual.md), [Backdoor Triggers](backdoor/backdoor.md)
+- 🤖 **Agent and RAG security:** [Tool Injection](tool_inject/tool-injection.md), [RAG Security](rag_security/rag-security.md), [Agent Security](agent_security/agent-security.md)
 
-Supported `provider` values: `openai`, `azure`, `ollama`, `openai_compatible`, `gemini`, `huggingface`, `anthropic`, `bedrock`.
+> 👆 Click any module name above to open its dedicated guide and learn more about its purpose, configuration, usage, outputs, and coverage.
 
----
+## 🏗️ Architecture
 
-## Quick start
+The framework is organized into three operational stages:
+
+```mermaid
+flowchart LR
+    change["Code change or release candidate"] --> scan["SCAN<br/>Assessment and vulnerability checks"]
+    scan --> attack["ATTACK<br/>Adversarial and abuse-case simulation"]
+    attack --> monitor["MONITOR<br/>Instrumented production telemetry"]
+
+    app["LLM application"] --> controls["Runtime reference controls<br/>Input/output policy checks"]
+    app --> monitor
+```
+
+Each runner is independently configurable. Reports should be interpreted as evidence from the selected test corpus, not as proof of complete protection.
+
+## 🚀 Quick start
+
+### 📋 Prerequisites
+
+- 🐍 Python 3.10-3.14 (Python 3.14 is supported; Python 3.10-3.12 remains the most conservative compatibility range)
+- 🔑 Credentials for the selected model provider, where required
+- 📡 LangFuse credentials only when production monitoring is enabled
+- 🌐 Network access to the target model or a reachable private/local endpoint
+
+### 📥 Install
+
+Clone the repository:
 
 ```bash
-# 1. Clone the repository
 git clone https://github.com/VenkateshDoijode/LLM-Strata.git
 cd LLM-Strata
-
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. Configure credentials (see Configuration reference)
-#    Create a .env file or export the variables for your chosen provider
-export OPENAI_API_KEY="your-key-here"
-
-# 4. Preview the pipeline without executing anything
-python run_security.py --dry-run
-
-# 5. Run the full pipeline
-python run_security.py
 ```
 
-On Windows PowerShell, set variables with `$env:OPENAI_API_KEY="your-key-here"`.
-
-If `OPENAI_API_KEY` is not set, Garak and LLM Guard fall back to mock or offline mode.
-
----
-
-## Usage
-
-### Other options
-
-| Flag | Description |
-|---|---|
-| `--garak-depth {quick,standard,all}` | Garak probe depth. The default is `standard`; `all` is slow. |
-| `--dry-run` | Print all steps without executing them |
-| `--ci` | CI mode: skip interactive tools and exit with code 1 if any layer fails |
-
-Human Red Team is interactive and never runs as part of the default pipeline.
-
----
-
-## Configuration reference
-
-### Configuration precedence
-
-Settings are resolved in this order, from highest to lowest priority:
-
-1. `ACTIVE_PROFILE` environment variable
-2. `active_profile` in `profiles.yaml`
-3. Each module's own YAML file
-4. Code defaults
-
-### Selecting a profile
+Then run the setup:
 
 ```bash
-# Change active_profile in profiles.yaml, or override at runtime:
-export ACTIVE_PROFILE=redteam          # Linux and macOS
-$env:ACTIVE_PROFILE="redteam"          # Windows PowerShell
+python setup.py
+```
 
+The setup process creates the main virtual environment, installs dependencies, provisions the isolated Garak environment, and creates report directories.
+
+### 🔑 Configure credentials
+
+Create a local environment file from the provided template, then keep only the variables required by your selected profile.
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+Linux/macOS:
+
+```bash
+cp .env.example .env
+```
+
+Configure the applicable provider variables in `.env` or in the operating-system environment:
+
+| Provider/profile | Required variables |
+|---|---|
+| OpenAI (`production`, `cost_optimized`, `redteam`) | `OPENAI_API_KEY` |
+| Azure OpenAI (`azure`) | `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_ENDPOINT` |
+| Gemini (`gemini`) | `GEMINI_API_KEY` |
+| Hugging Face (`huggingface`) | `HF_TOKEN` |
+| Anthropic (`anthropic`) | `ANTHROPIC_API_KEY` |
+| AWS Bedrock (`bedrock`) | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION_NAME` |
+| Ollama (`local`) | No cloud key by default; start the Ollama service |
+| Private compatible endpoint (`private_compatible`) | `OPENAI_COMPATIBLE_BASE_URL` and an optional `OPENAI_COMPATIBLE_API_KEY` |
+
+> ✅ **Select any one provider of your choice — you don't need to set up all of them.** Configure only the variables required by the provider/profile you plan to use.
+
+For production monitoring, also set `LANGFUSE_PUBLIC_KEY` and `LANGFUSE_SECRET_KEY`. Operating-system variables take precedence over `.env` values. Never commit `.env`, API keys, provider endpoints containing credentials, or generated reports. See [Providers and Secrets](docs/providers-and-secrets.md) for the full provider matrix and precedence rules.
+
+### 🎛️ Select a model profile
+
+Set `active_profile` in `profiles.yaml`, or override it for one process:
+
+```powershell
+$env:ACTIVE_PROFILE = "private_compatible"
+python run_security.py --dry-run
+```
+
+Available profiles include OpenAI, Azure, Ollama, Gemini, Hugging Face, Anthropic through LiteLLM, AWS Bedrock through LiteLLM, and private OpenAI-compatible endpoints. See [`profiles.yaml`](profiles.yaml) for the current profile definitions.
+
+### ✅ Validate and run
+
+Start with a non-networked orchestration check:
+
+```bash
+python run_security.py --dry-run
+```
+
+Run the configured pipeline only after reviewing credentials, data handling, and cost:
+
+```bash
 python run_security.py
 ```
 
-### Profile fields
+Run the focused unit tests:
 
-| Field | Description |
-|---|---|
-| `provider` | Provider type (see [Supported providers](#supported-providers)) |
-| `model` | The model under test, used by all modules |
-| `judge_model` | RAGAS: faithfulness and relevancy judge |
-| `evaluator_model` | DeepEval: safety metric judge |
-| `attacker_model` | PyRIT: generates adversarial prompts |
-| `scorer_model` | PyRIT and LangFuse: judges attacks and scores traces |
-| `base_url` | `openai_compatible` only: endpoint URL, for example `http://localhost:8000/v1` |
-| `api_key_required` | `openai_compatible` only: set to `true` for a protected endpoint |
-
-PyRIT uses separate attacker and scorer roles. Set them independently per profile for the best red-team coverage. For high-confidence assessments, use evaluator models that are independent of the target model, and record the profile used for every run.
-
-### Example profile
-
-```yaml
-active_profile: cost_optimized
-
-profiles:
-  redteam:
-    provider: openai
-    model: gpt-4o              # strongest model as target (hardest test)
-    judge_model: gpt-4o-mini
-    evaluator_model: gpt-4o-mini
-    attacker_model: gpt-4o     # strongest attacker for maximum coverage
-    scorer_model: gpt-4o-mini
+```bash
+python -m unittest discover -s agent_security/tests -v
 ```
 
-### Skip variables (CI)
+### 🔌 Supported Providers
 
-Set these variables to reduce cost or to skip application-specific tests that do not apply to you:
+The current provider adapters are:
 
-```text
-SKIP_RAGAS=true
-SKIP_PYRIT=true
-SKIP_LANGFUSE=true
-SKIP_ENCODED=true
-SKIP_MANY_SHOT=true
-SKIP_MULTILINGUAL=true
-SKIP_TOOL_INJECT=true
-SKIP_BACKDOOR=true
-SKIP_RAG_SECURITY=true
-```
+- ☁️ OpenAI
+- 🔷 Azure OpenAI
+- 🦙 Ollama
+- 🔵 Google Gemini
+- 🤗 Hugging Face Inference API
+- 🧩 Anthropic through LiteLLM
+- 🟠 AWS Bedrock through LiteLLM
+- 🔒 Private and on-premises OpenAI-compatible endpoints
 
----
+#### 🌍 Supported Deployment Contexts
 
-## Architecture
+The framework can assess these deployment contexts when the target is reachable through a supported interface:
 
-### Pipeline phases
+- ☁️ Cloud LLM
+- 🏢 Private Cloud LLM
+- 💻 Local/On-Prem LLM
+- 📱 Edge LLM
+- 🔀 Hybrid LLM
+- 🔐 Air-Gapped LLM
+- 📦 Containerized LLM
+- 🌐 Multi-Cloud LLM
+- 🧱 Embedded/Application LLM
 
-**1. Pre-deployment discovery.** These layers send controlled prompts or simulated contexts to a target model: Garak, DeepEval, RAGAS, PyRIT, Encoded Attacks, In-Context Attacks, Multilingual Attacks, Backdoor Triggers, RAG Security, Tool Injection, and Agent Security model tests.
+> 💡 The framework supports OpenAI-compatible endpoints and selected LiteLLM-backed providers. Additional LiteLLM providers can be integrated through `client_factory.py` and `profiles.yaml`. See [Providers and Secrets](docs/providers-and-secrets.md).
 
-**2. Runtime and operational controls.**
+## 🔄 CI/CD
 
-- **LLM Guard:** local input/output scanning demonstration
-- **Agent Security:** policy primitives that can be embedded in an application
-- **Tool Injection:** simulated agent boundary testing
+The GitLab pipeline is organized into three stages:
 
-These tests do not automatically protect a separate production application. The production request path must explicitly call the controls.
+| Stage | Purpose | Examples |
+|---|---|---|
+| 🔍 `scan` | Core security and safety assessment | Vulnerability scanning, safety evaluation, agentic red teaming |
+| ⚔️ `attack` | Advanced adversarial simulation | Encoding, multilingual, in-context, tool injection, backdoor, RAG security |
+| 📡 `monitor` | Instrumented monitoring | LangFuse traces and safety scores |
 
-**3. Production monitoring.**
-
-- **LangFuse:** traces, scores, and drift monitoring for instrumented requests
-- **Human Red Team:** periodic manual testing and review
-
-### Shared execution flow
-
-```text
-module YAML configuration
-        |
-profiles.yaml + ACTIVE_PROFILE
-        |
-env_loader.py loads credentials
-        |
-client_factory.py creates an OpenAI-compatible client
-        |
-target model / evaluator / attacker / scorer
-        |
-layer-specific test runner
-        |
-JSON report, console result, or LangFuse trace
-```
-
-The target model and evaluator model may be the same by default. For high-confidence assessments, use independent evaluator models and record the profile used for every run.
-
-### Trust boundaries
-
-1. **Configuration boundary:** YAML files are test instructions, not runtime authorization policy.
-2. **Provider boundary:** prompts and responses may leave the local environment and be retained by the provider.
-3. **Evaluator boundary:** an evaluator model provides a judgment; it is not an authoritative security control.
-4. **Report boundary:** result files may contain harmful prompts, PII, secrets accidentally returned by a model, and full responses.
-5. **Production boundary:** the test harness does not automatically authorize tools, isolate memory, or protect a real RAG store.
-
-### Simulation versus production connectivity
-
-| Area | Current behavior |
-|---|---|
-| Tool Injection | Simulates tool results; does not call real tools |
-| RAG Security | Simulates retrieved context; does not connect to a vector database |
-| Agent Security memory | Uses an in-memory test model |
-| Agent Security authorization | Evaluates local policy data |
-| Human Red Team | Sends real prompts to the configured target model |
-| LLM Guard | Runs local scanners and may use a mock response |
-| LangFuse | Connects to the configured LangFuse service |
-| Garak | Runs Garak in its isolated environment |
-
-### Design principle
-
-A model response is untrusted input. Security decisions must be enforced by application code, identity and access controls, tool schemas, data-layer authorization, and monitoring outside the model.
-
----
-
-## Data handling
-
-LLM Strata sends adversarial prompts to models and stores the responses. Plan for that before you run it against real systems.
-
-**What leaves your environment**
-
-- Prompts, simulated contexts, and model responses are sent to the configured provider. The provider may retain or process them according to its own policy. Use the `local` or `private_compatible` profiles, or Azure with your data-residency settings, when data must stay within your control.
-- LangFuse traces are sent to the configured LangFuse service. Mask secrets and unnecessary PII before instrumenting real traffic.
-
-**What is stored locally**
-
-- Reports are written under `results/<layer>/` (for example `results/rag_security/`, `results/tool_inject/`, and `results/ragas/`).
-- Reports can contain harmful prompts, PII from test fixtures, secrets that a model returned by accident, and full model responses. Treat report files as sensitive.
-- Human red-team session logs are written to `results/human_redteam/`.
-
----
-
-## Threat model and scope
-
-### In scope
-
-The framework evaluates LLM-powered applications before and after deployment. It focuses on model behavior, prompt handling, RAG context, agent tools, memory policies, runtime scanning, and operational monitoring.
-
-### Protected assets
-
-- System and developer instructions
-- User prompts and conversation history
-- Personal, financial, health, and confidential business data
-- Tool permissions and side-effecting actions
-- Agent memory and tenant boundaries
-- RAG documents, embeddings, and retrieval metadata
-- Model and provider credentials
-- Security reports and LangFuse traces
-- Application availability and cost budget
-
-### Threat actors
-
-- A malicious or compromised end user
-- An attacker who controls a document, email, web page, database row, or calendar entry
-- A user attempting privilege escalation or authority impersonation
-- A malicious fine-tuning or training-data contributor
-- A compromised or misconfigured provider endpoint
-- An evaluator or scanner failure that causes a team to misread results
-
-### Threat coverage mapping
-
-| Threat | Primary layers |
-|---|---|
-| Direct jailbreak and unsafe output | Garak, DeepEval, PyRIT |
-| Prompt injection | Garak, LLM Guard, Tool Injection, RAG Security |
-| Multi-turn escalation | PyRIT, Agent Security, Human Red Team |
-| In-context conditioning | Many-Shot Jailbreaks |
-| Encoding and obfuscation | Encoded Attacks, Garak red-team probes |
-| Cross-language evasion | Multilingual Attacks |
-| Trigger sensitivity | Backdoor Triggers |
-| PII output leakage | DeepEval, RAGAS, LLM Guard, RAG Security |
-| Tool privilege misuse | Agent Security, Tool Injection |
-| Memory isolation | Agent Security |
-| Production drift | LangFuse |
-
-### Trust assumptions
-
-The following are untrusted unless explicitly validated:
-
-- User prompts
-- Model outputs
-- Retrieved documents
-- Tool results
-- Assistant-generated tool arguments
-- Human-entered red-team prompts
-- Test configuration values supplied from outside source control
-
----
-
-## Production integration
-
-The runners find weaknesses; they do not automatically protect a separate application. Production enforcement must be implemented in the application's request, tool, data, and response paths.
-
-### Recommended request flow
-
-```text
-authenticate user
-  -> validate tenant and request
-  -> scan or classify input
-  -> build trusted system/developer context
-  -> call model
-  -> validate structured output
-  -> authorize requested tool independently
-  -> require approval for high-impact actions
-  -> execute tool with scoped credentials
-  -> scan/redact response
-  -> trace security metadata without secrets
-```
-
-### Tool authorization
-
-Never use the model's claim that a tool is allowed as the authorization decision. Use an external policy evaluator with:
-
-- Explicit role/tool allowlists
-- Deny-by-default behavior
-- Tenant and resource checks
-- Schema and argument validation
-- Approval for destructive, external, financial, or export actions
-- Audit logging
-- Fail-closed behavior when policy is missing or unavailable
-
-The Agent Security layer provides local policy regression tests; production code must enforce the same policy at the actual tool boundary.
-
-### Prompt and tool-result separation
-
-Treat retrieved documents, web pages, files, emails, database rows, and tool results as untrusted data. Delimit them, label their trust level, and do not allow their contents to grant permissions or override system policy. Use the Tool Injection and RAG Security modules to test this boundary.
-
-### Runtime scanning
-
-LLM Guard is a local scanner demonstration. A production integration should define what happens when each scanner triggers:
-
-- Block the request
-- Redact sensitive data
-- Ask for confirmation
-- Route to human review
-- Log a privacy-preserving event
-
-Benchmark latency, false positives, false negatives, Unicode behavior, multilingual behavior, and scanner failure handling before deployment.
-
-### Memory and RAG
-
-- Scope memory by authenticated tenant and user.
-- Authenticate trusted writes.
-- Apply data-layer ACLs before retrieval.
-- Track document provenance.
-- Never treat retrieved text as an instruction with higher priority than policy.
-- Test deletion, reset, export, and cross-tenant access paths.
-
-Recommended RAG controls include document provenance, tenant/ACL-aware retrieval, content sanitization, prompt/data separation, chunk-level trust labels, output filtering, and post-retrieval authorization. A trusted application user does not make every retrieved document trusted.
-
-### Monitoring
-
-Use LangFuse or another approved telemetry system to monitor production behavior, but mask secrets and unnecessary PII. Monitoring detects and helps investigate failures; it does not prevent unauthorized actions by itself.
-
----
-
-## CI/CD
-
-The included GitLab pipeline has three stages:
-
-1. **scan:** Garak, DeepEval, RAGAS, PyRIT, and LLM Guard
-2. **attack:** encoded, in-context, multilingual, tool injection, backdoor, and RAG security tests
-3. **monitor:** LangFuse, when its credentials are present
-
-Human Red Team is interactive and is intentionally excluded from CI.
-
-### Release gating
-
-For a release gate, define explicit rules for:
-
-- Any confirmed `UNSAFE` or `BREACHED` result
-- Authorization failures
-- PII leakage
-- Tool-injection success
-- Test `ERROR` or `UNKNOWN` rates
-- Missing reports
-
-Do not use a single aggregate pass count as the release decision. A layer with zero executed tests must not be treated as a passing layer.
-
-### Local CI-equivalent checks
+Run the CI-equivalent dry run locally:
 
 ```bash
 python run_security.py --dry-run
 python run_security.py --ci --skip-langfuse
-python -m unittest discover -s agent_security/tests -v
 ```
 
-Run a reduced smoke suite on pull requests and the complete matrix nightly or before release. Each case calls the target model and, for some layers, several scoring components, so a full run is more expensive than a simple prompt test. Use `--scenario` for pull-request smoke tests, poisoned-only or targeted cases for development, and the complete corpus nightly or before release. Triage RAGAS quality failures separately from retrieval-security failures.
+The pipeline stores reports under `results/` as CI artifacts. Review reports rather than relying only on job status; advisory attack jobs may complete successfully while reporting unsafe behavior.
 
 ---
 
-## Project structure
+## 📚 Documentation
+
+| Guide | Description |
+|---|---|
+| 🏗️ [Architecture](docs/architecture.md) | Pipeline phases, trust boundaries, and data flow |
+| 🎯 [Threat model](docs/threat-model.md) | Assets, actors, assumptions, and coverage boundaries |
+| 🔑 [Providers and secrets](docs/providers-and-secrets.md) | Profiles, credentials, endpoints, and provider integration |
+| 🔄 [CI/CD operations](docs/ci-cd.md) | Stages, variables, artifacts, and release guidance |
+| 🧾 [Results and triage](docs/results-and-triage.md) | Outcome interpretation and remediation workflow |
+| 🏭 [Production integration](docs/production-integration.md) | Runtime enforcement and monitoring integration |
+
+## 📁 Project structure
 
 ```text
 LLM-Strata/
@@ -472,23 +264,27 @@ LLM-Strata/
 ├── rag_security/            # Layer 13
 ├── agent_security/          # Layer 14
 ├── docs/                    # Threat model, architecture, CI/CD, triage, integration
-└── results/                 # Generated reports (do not commit)
+└── results/                 # Generated reports 
 ```
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
-Contributions are welcome. Fork the repository, make your change, and open a pull request with a short description of what you changed and why.
+Contributions are welcome! 🎉 Fork the repository, make your change, and open a pull request with a short description of what you changed and why.
 
----
-
-## License
-
-LLM Strata is open source. See the `LICENSE` file for the license terms.
+- 🐛 Found a bug or have an idea? [Open an issue](https://github.com/VenkateshDoijode/LLM-Strata/issues)
+- 🔧 Ready to contribute? [Submit a pull request](https://github.com/VenkateshDoijode/LLM-Strata/pulls)
+- ⭐ Like the project? [Give it a star](https://github.com/VenkateshDoijode/LLM-Strata) to help others find it
 
 ---
 
-## Author
+## 📄 License
+
+LLM Strata is open source. See the `LICENSE` file for the [license terms](LICENSE).
+
+---
+
+## 👤 Author
 
 Created and maintained by [Venkateshwara Doijode](https://github.com/VenkateshDoijode).
