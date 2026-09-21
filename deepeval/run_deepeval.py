@@ -17,7 +17,7 @@ Metrics:
 
 Requirements:
     pip install deepeval
-    OPENAI_API_KEY must be set
+    Credentials for the active provider must be set
 
 Usage:
     python deepeval/run_deepeval.py                 # full safety scan
@@ -27,6 +27,7 @@ Usage:
 """
 
 import argparse
+import asyncio
 import json
 import sys
 from datetime import datetime
@@ -52,7 +53,7 @@ def load_config() -> dict:
 
 
 def check_env():
-    require_env("OPENAI_API_KEY")
+    require_provider_env()
 
 
 def check_deepeval():
@@ -63,6 +64,55 @@ def check_deepeval():
         print("  ERROR: deepeval not installed.")
         print("         Run: pip install -r requirements.txt")
         sys.exit(1)
+
+
+def create_deepeval_model(model_name: str):
+    """Adapt the active provider client to DeepEval's custom model interface."""
+    from deepeval.models.base_model import DeepEvalBaseLLM
+
+    class ProviderModel(DeepEvalBaseLLM):
+        def __init__(self):
+            self.model_name = model_name
+            self.client = get_client()
+            self.model = self.load_model()
+
+        def load_model(self):
+            return self.client
+
+        def _generate_text(self, prompt: str) -> str:
+            response = self.load_model().chat.completions.create(
+                model=self.model_name,
+                messages=[{"role": "user", "content": prompt}],
+            )
+            return response.choices[0].message.content or ""
+
+        def generate(self, prompt: str, schema=None):
+            text = self._generate_text(prompt)
+            if schema is None:
+                return text
+
+            payload = text.strip()
+            if payload.startswith("```"):
+                payload = payload.split("\n", 1)[-1].rsplit("```", 1)[0].strip()
+            try:
+                data = json.loads(payload)
+            except json.JSONDecodeError:
+                start, end = payload.find("{"), payload.rfind("}")
+                if start < 0 or end <= start:
+                    raise ValueError("Evaluator returned invalid structured output.") from None
+                data = json.loads(payload[start:end + 1])
+
+            if hasattr(schema, "model_validate"):
+                return schema.model_validate(data)
+            return schema.parse_obj(data)
+
+        async def a_generate(self, prompt: str, schema=None):
+            return await asyncio.to_thread(self.generate, prompt, schema)
+
+        def get_model_name(self):
+            return self.model_name
+
+    return ProviderModel()
 
 
 def run_bias_test(model_name: str, test_input: str, verbose: bool,
@@ -224,8 +274,9 @@ METRIC_RUNNERS = {
 
 
 def run_all_tests(config: dict, filter_metric: str | None, verbose: bool) -> list[dict]:
-    model_name      = get_model("model",           config.get("model", "gpt-4o-mini"))
+    model_name      = get_model("model",           config.get("model",           "gpt-4o-mini"))
     evaluator_model = get_model("evaluator_model", config.get("evaluator_model", "gpt-4o-mini"))
+    evaluator       = create_deepeval_model(evaluator_model)
     test_cases      = config.get("test_cases", [])
     metric_thresholds = {
         metric["name"]: metric.get("threshold", 0.5)
@@ -235,7 +286,7 @@ def run_all_tests(config: dict, filter_metric: str | None, verbose: bool) -> lis
     results = []
 
     for tc in test_cases:
-        category   = tc.get("category")
+        category = tc.get("category")
         test_input = tc.get("input")
 
         if filter_metric and category != filter_metric:
@@ -243,12 +294,12 @@ def run_all_tests(config: dict, filter_metric: str | None, verbose: bool) -> lis
 
         runner = METRIC_RUNNERS.get(category)
         if not runner:
-            print(f"  SKIP: unknown category '{category}'")
+            print(f"    SKIP: unknown category '{category}'")
             continue
 
         try:
             threshold = metric_thresholds.get(category, 0.5)
-            result = runner(model_name, test_input, verbose, evaluator_model, threshold)
+            result = runner(model_name, test_input, verbose, evaluator, threshold)
             results.append(result)
         except Exception as e:
             print(f"    ERROR on '{test_input[:50]}...': {e}")
