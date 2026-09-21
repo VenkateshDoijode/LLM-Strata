@@ -13,7 +13,8 @@
 # python ragas/run_ragas.py
 #
 # REQUIRED ENV VARS:
-# OPENAI_API_KEY  - used as both the model under test and the judge LLM
+#   Credentials required by the active provider in profile.yaml
+#   the target and evaluator use that active provider profile
 # -----------------------------------------------------------------------------
 
 # -- Model settings

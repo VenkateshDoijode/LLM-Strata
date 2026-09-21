@@ -18,7 +18,10 @@ RAGAS tests whether your RAG pipeline is safe from:
 
 Requirements:
   pip install ragas openai
-  OPENAI_API_KEY must be set
+   Credentials required by the active provider in profile.yaml
+
+   Supported providers OpenAI | Azure OpenAI |  Ollama |  Google Gemini |  Hugging Face Inference API
+ |  Anthropic through LiteLLM  |  AWS Bedrock through LiteLLM |  Private and on-premises OpenAI-compatible endpoints
 
 API version: ragas>=0.4.3 (uses SingleTurnSample, llm_factory, metrics.collections, metric.single_turn_score())
 Deprecated: LangchainLLMWrapper, LangchainEmbeddingsWrapper, ragas.metrics imports (removed in v1.0).
@@ -32,15 +35,16 @@ Usage:
 import argparse
 import json
 import sys
+import os
 from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import yaml
-from env_loader import load_dotenv, require_env
+from env_loader import load_dotenv, require_provider_env
 from profile_loader import get_model, active_profile_name
-from client_factory import get_client
+from client_factory import get_client, get_provider
 
 load_dotenv()
 
@@ -54,7 +58,7 @@ def load_config() -> dict:
 
 
 def check_env():
-    require_env("OPENAI_API_KEY")
+    require_provider_env()
 
 
 def check_ragas():
@@ -86,9 +90,93 @@ def get_rag_answer(question: str, context: str, model: str) -> str:
     return response.choices[0].message.content
 
 
-def evaluate_test_case(tc: dict, model: str, judge_model: str, threshold: float, verbose: bool) -> dict:
+class _SentenceTransformerEmbeddings:
+    """RAGAS-compatible local embeddings via sentence-transformers (no API key needed).
+
+    Used as a fallback for providers that do not expose an embeddings endpoint
+    (e.g. Anthropic, AWS Bedrock). Requires: pip install sentence-transformers
+    """
+
+    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+        try:
+            from sentence_transformers import SentenceTransformer
+            self._st = SentenceTransformer(model_name)
+        except ImportError:
+            raise ImportError(
+                "sentence-transformers is required for Anthropic/Bedrock providers.\n"
+                "Run: pip install sentence-transformers"
+            )
+
+    def embed_query(self, text: str) -> list[float]:
+        return self._st.encode(text).tolist()
+
+    def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        return [v.tolist() for v in self._st.encode(texts)]
+
+
+def _get_ragas_judge(judge_model: str):
+    """Return a RAGAS LLM wrapper for the active profile's provider.
+
+    Provider routing:
+      openai / azure / ollama / gemini / huggingface / openai_compatible
+        - all return an openai.OpenAI SDK instance from get_client();
+          pass it straight to llm_factory (instructor adapter, default).
+      anthropic
+        - RAGAS natively supports Anthropic via its Instructor adapter;
+          we create the native Anthropic client here (not the LiteLLM shim).
+      bedrock
+        - uses instructor's Bedrock provider via boto3.
+    """
     from ragas.llms import llm_factory
+    provider = get_provider()
+
+    if provider == "anthropic":
+        from anthropic import Anthropic
+        client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        return llm_factory(judge_model, provider="anthropic", client=client)
+
+    if provider == "bedrock":
+        try:
+            import boto3
+            import instructor
+            from instructor import Provider as IProvider
+        except ImportError:
+            raise ImportError(
+                "boto3 and instructor are required for the bedrock provider.\n"
+                "Run: pip install boto3 instructor"
+            )
+        bedrock_client = boto3.client(
+            "bedrock-runtime",
+            region_name=os.environ.get("AWS_REGION_NAME", "us-east-1"),
+        )
+        client = instructor.from_provider(IProvider.BEDROCK, client=bedrock_client)
+        return llm_factory(judge_model, provider="bedrock", client=client)
+
+    # openai, azure, ollama, gemini, huggingface, openai_compatible
+    return llm_factory(judge_model, client=get_client())
+
+
+def _get_ragas_embeddings():
+    """Return a RAGAS embeddings object for the active profile's provider.
+
+    Provider routing:
+      openai / azure / ollama / gemini / huggingface / openai_compatible
+        - RagasOpenAIEmbeddings wrapping the active client (all expose the
+          OpenAI embeddings endpoint at their base_url).
+      anthropic / bedrock
+        - no native embeddings endpoint; fall back to a local
+          sentence-transformers model (all-MiniLM-L6-v2).
+    """
     from ragas.embeddings import OpenAIEmbeddings as RagasOpenAIEmbeddings
+    provider = get_provider()
+
+    if provider in ("anthropic", "bedrock"):
+        return _SentenceTransformerEmbeddings()
+
+    return RagasOpenAIEmbeddings(client=get_client())
+
+
+def evaluate_test_case(tc: dict, model: str, judge_model: str, threshold: float, verbose: bool) -> dict:
     from ragas.metrics.collections import Faithfulness, AnswerRelevancy, ContextPrecision, ContextRecall
     from ragas.dataset_schema import SingleTurnSample
 
@@ -100,9 +188,8 @@ def evaluate_test_case(tc: dict, model: str, judge_model: str, threshold: float,
     answer = get_rag_answer(question, context, model)
 
     # v0.4.3 API: llm_factory + native OpenAIEmbeddings (no langchain dependency)
-    openai_client = get_client()
-    llm          = llm_factory(judge_model, client=openai_client)
-    embeddings   = RagasOpenAIEmbeddings(client=openai_client)
+    llm          = _get_ragas_judge(judge_model)
+    embeddings   = _get_ragas_embeddings()
 
     sample = SingleTurnSample(
         user_input=question,
