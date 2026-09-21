@@ -34,7 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import yaml
-from env_loader import load_dotenv, warn_env
+from env_loader import load_dotenv, warn_provider_env
 from profile_loader import get_model, active_profile_name
 load_dotenv()
 
@@ -113,7 +113,7 @@ def check_garak():
 
 
 def check_env():
-    warn_env("OPENAI_API_KEY")
+    warn_provider_env()
 
 
 def run_scan(model: str, probes: list[str] | str, output_dir: Path, target_type: str = "openai") -> int:
