@@ -36,7 +36,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import yaml
-from env_loader import load_dotenv, require_env
+from env_loader import load_dotenv, require_provider_env
 from profile_loader import get_model, active_profile_name
 from client_factory import get_client
 load_dotenv()
