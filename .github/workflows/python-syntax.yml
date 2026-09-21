@@ -1,0 +1,41 @@
+name: Python Compile & Syntax Check
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  syntax-check:
+    name: Compile & Syntax (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Byte-compile all Python files (syntax check)
+        run: |
+          python -m compileall -q . -x '\.git|\.venv|venv|build|dist'
+
+      - name: Install flake8
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Lint for syntax errors and undefined names
+        run: |
+          # E9 = runtime/syntax errors, F63 = invalid comparisons,
+          # F7 = break/continue/return outside loop/function, F82 = undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
