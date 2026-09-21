@@ -113,11 +113,7 @@ def main():
     print("  Activate environment:")
     print(f"    {activate}")
     print()
-    print("  Set environment variables:")
-    if sys.platform == "win32":
-        print("    set OPENAI_API_KEY=sk-...")
-    else:
-        print("    export OPENAI_API_KEY=sk-...")
+    print("  Set Credentials for your active provider in profiles.yaml")
     print()
     print("  Then run:")
     print("    python run_security.py                 # run all automated tools")

@@ -49,7 +49,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from env_loader import load_dotenv
+from env_loader import load_dotenv,warn_provider_env
 load_dotenv()
 
 DRY_RUN = False
@@ -65,9 +65,7 @@ def run(cmd: list[str]) -> int:
 
 
 def check_env():
-    if not os.environ.get("OPENAI_API_KEY"):
-        print("  WARNING: OPENAI_API_KEY not set.")
-        print("     Garak and LLM Guard will use mock/offline mode.\n")
+    warn_provider_env()
 
 
 def print_header(title: str):

@@ -14,7 +14,8 @@ Priority order (highest to lowest):
                                      set in the system environment.
 
 This means:
-  - Set OPENAI_API_KEY in your .env for local development
+  - Set the credentials for your active provider
+  OPENAI_API_KEY in your .env for local development
   - Set it as a system/CI variable in production - it will take precedence
   - You never need to change code between environments
 """
@@ -97,9 +98,42 @@ def warn_env(*keys: str):
     Use this for tools that have an offline/mock fallback.
 
     Example:
-        warn_env("OPENAI_API_KEY")
+        warn_env("GEMINI_API_KEY")
     """
     missing = [k for k in keys if not os.environ.get(k)]
     if missing:
         for k in missing:
-            print(f"  WARNING: {k} not set - tool may run in offline/mock mode.")
+            print(f"  WARNING: {k} not set — tool may run in offline/mock mode.")
+
+            
+def warn_provider_env(provider: str | None = None):
+    """Warn if credentials for the active provider are missing but continue execution.
+
+    Provider-aware counterpart to require_provider_env().
+    Use this for tools that have an offline/mock fallback (e.g. Garak, LLM Guard).
+
+    Example:
+        warn_provider_env()   # warns about whichever provider is active in profiles.yaml
+    """
+    from profile_loader import load_profile
+
+    profile = load_profile()
+    selected = (provider or profile.get("provider", "openai")).lower()
+    required_by_provider = {
+        "openai": ("OPENAI_API_KEY",),
+        "azure": ("AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT"),
+        "ollama": (),
+        "gemini": ("GEMINI_API_KEY",),
+        "huggingface": ("HF_TOKEN",),
+        "anthropic": ("ANTHROPIC_API_KEY",),
+        "bedrock": ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_REGION_NAME"),
+    }
+
+    if selected in ("openai_compatible", "custom"):
+        required: tuple[str, ...] = ()
+    elif selected not in required_by_provider:
+        return  # unknown provider — nothing to warn about
+    else:
+        required = required_by_provider[selected]
+
+    warn_env(*required)
