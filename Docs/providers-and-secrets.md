@@ -34,7 +34,7 @@ Recommended order:
 | Bedrock | `bedrock` | AWS credentials, region, LiteLLM, and boto3 |
 | Private endpoint | `openai_compatible` | Base URL and optional API key |
 
-Garak runs in a separate environment and uses its own target type/model settings. LangFuse additionally requires LangFuse public and secret keys. Some RAGAS and DeepEval paths currently require `OPENAI_API_KEY` directly.
+Garak runs in a separate environment and uses its own target type/model settings. LangFuse additionally requires LangFuse public and secret keys. 
 
 ## Adding a Proprietary Cloud LLM
 
