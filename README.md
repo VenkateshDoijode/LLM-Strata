@@ -10,7 +10,7 @@
 ## 🎯 Objective
 
 LLMs are powerful — but they can be manipulated, abused, and exploited in ways traditional software cannot.
-**LLM Strata** is a Python framework for testing and monitoring LLM-powered applications across their lifecycle. It provides configurable coverage; it does not guarantee detection of every attack or replace production authorization controls:
+**LLM Strata** is a Python framework for testing and monitoring LLM-powered applications across their lifecycle. It provides configurable coverage.
 
 - 🔍 **Before deployment** — find vulnerabilities, safety gaps, and adversarial weaknesses
 - 🚧 **At runtime** — demonstrate input/output scanning and policy controls that applications can integrate in real-time
@@ -83,7 +83,7 @@ flowchart LR
     app --> monitor
 ```
 
-Each runner is independently configurable. Reports should be interpreted as evidence from the selected test corpus, not as proof of complete protection.
+Each runner is independently configurable. Reports should be interpreted as evidence from the selected test corpus.
 
 ## 🚀 Quick start
 
