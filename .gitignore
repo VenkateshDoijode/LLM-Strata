@@ -1,5 +1,5 @@
 # Environment variables — never commit
-#.env
+.env
 
 # Virtual environment
 .venv/
