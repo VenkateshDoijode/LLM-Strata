@@ -70,12 +70,10 @@ def get_model(key: str, fallback: str) -> str:
 
 def active_profile_name() -> str:
     """Return the name of the currently active profile (for display purposes)."""
-    global _active_name_cache
     if not _PROFILES_PATH.exists():
         return "none"
     if _active_name_cache is not None:
         return _active_name_cache
-    with open(_PROFILES_PATH) as f:
-        data = yaml.safe_load(f) or {}
-    return os.environ.get("ACTIVE_PROFILE") or data.get("active_profile", "cost_optimized")
+    load_profile()  # populates _active_name_cache as a sideeffect from global declartion
+    return _active_name_cache or "cost_optimized"
     
