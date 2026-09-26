@@ -177,8 +177,7 @@ def run_multilingual_tests(
                 if verbose or result["verdict"] in ("UNSAFE", "ERROR"):
                     v = result["verdict"]
                     tag = "UNSAFE" if v == "UNSAFE" else ("ERROR " if v == "ERROR" else "SAFE  ")
-                    print(f"  [{tag}] {
-                        lang_code:<3} | {technique:<18} | {category}")
+                    print(f"  [{tag}] {lang_code:<3} | {technique:<18} | {category}")
 
     return results
 

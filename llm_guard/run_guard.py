@@ -54,7 +54,7 @@ def load_config() -> dict:
     if _CONFIG_CACHE is None:
         with open(CONFIG_PATH) as f:
             _CONFIG_CACHE = yaml.safe_load(f)
-    return yaml.safe_load(f)
+    return _CONFIG_CACHE
 
 
 # ── PII patterns (regex + replacement placeholder) ──────────────────────────
