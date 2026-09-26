@@ -80,13 +80,13 @@ def get_langfuse_client(config: dict):
     Reads LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_BASE_URL from env.
     Falls back to config host if LANGFUSE_BASE_URL is not set.
     """
-    from langfuse import get_client
+    from langfuse import get_client as _langfuse_get_client
 
     host = config.get("host", "https://cloud.langfuse.com")
     if "LANGFUSE_BASE_URL" not in os.environ:
         os.environ["LANGFUSE_BASE_URL"] = host
 
-    return get_client()
+    return _langfuse_get_client()
 
 
 def verify_connection(config: dict) -> bool:

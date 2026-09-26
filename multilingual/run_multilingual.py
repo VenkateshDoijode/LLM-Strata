@@ -46,8 +46,7 @@ VALID_TECHNIQUES = ("direct", "mixed_framing", "translate_bridge")
 
 # --- Prompt builders -----------------------------------------------
 
-def build_prompt(technique: str, lang_code: str, lang_name: str,
-                  translated_text: str, english_text: str) -> str:
+def build_prompt(technique: str, lang_name: str, translated_text: str) -> str:
     if technique == "direct":
         return translated_text
 
@@ -131,7 +130,6 @@ def run_multilingual_tests(
         category = attack["category"]
         intent   = attack["intent"]
         translations = attack.get("translations", {})
-        english_text = translations.get("en", "")
 
         for lang in active_languages:
             lang_code = lang["code"]
@@ -142,8 +140,7 @@ def run_multilingual_tests(
 
             for technique in active_techniques:
                 try:
-                    prompt = build_prompt(technique, lang_code, lang_name,
-                        translated, english_text)
+                    prompt = build_prompt(technique, lang_name, translated)
                     resp = client.chat.completions.create(
                         model=model_name,
                         messages=[{"role": "user", "content": prompt}],
@@ -180,7 +177,8 @@ def run_multilingual_tests(
                 if verbose or result["verdict"] in ("UNSAFE", "ERROR"):
                     v = result["verdict"]
                     tag = "UNSAFE" if v == "UNSAFE" else ("ERROR " if v == "ERROR" else "SAFE  ")
-                    print(f"  [{tag}] {lang_code:<3} | {technique:<18} | {category}")
+                    print(f"  [{tag}] {
+                        lang_code:<3} | {technique:<18} | {category}")
 
     return results
 

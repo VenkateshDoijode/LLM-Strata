@@ -31,11 +31,14 @@ import yaml
 from env_loader import load_dotenv
 load_dotenv()
 
+from profile_loader import get_model
+
 try:
     from client_factory import get_client
     client = get_client()
     OPENAI_AVAILABLE = True
 except Exception:
+    client = None
     OPENAI_AVAILABLE = False
 
 
@@ -43,9 +46,15 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_PATH = PROJECT_ROOT / "llm_guard/guard_config.yaml"
 
 
+_CONFIG_CACHE: dict | None = None
+
+
 def load_config() -> dict:
-    with open(CONFIG_PATH) as f:
-        return yaml.safe_load(f)
+    global _CONFIG_CACHE
+    if _CONFIG_CACHE is None:
+        with open(CONFIG_PATH) as f:
+            _CONFIG_CACHE = yaml.safe_load(f)
+    return yaml.safe_load(f)
 
 
 # ── PII patterns (regex + replacement placeholder) ──────────────────────────
@@ -346,8 +355,11 @@ def scan_input(prompt: str) -> tuple:
     return sanitized, is_valid, results_score
 
 
-def get_llm_response(prompt: str, model: str = "gpt-4o-mini") -> str:
-    """Call OpenAI API. Returns mock response if API key not set."""
+def get_llm_response(prompt: str, model: str | None = None) -> str:
+    """Call the active profile's LLM. Returns mock response if client unavialable"""
+    if model is None:
+        config = load_config()
+        model =get_model("model",config.get("model","gpt-4o-mini"))
     if not OPENAI_AVAILABLE:
         return f"[MOCK RESPONSE] This is a simulated response to: '{prompt[:50]}...'"
     response = client.chat.completions.create(

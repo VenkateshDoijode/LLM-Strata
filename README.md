@@ -60,7 +60,7 @@ LLM Strata is a collection of independent security and safety test layers. The l
 
 LLM Strata is composed of 14 independent security and safety layers. Each layer has its own runner, configuration, outputs, and direct command, so it can be executed independently or as part of the full pipeline. The layers share provider, profile, and reporting utilities while remaining independently configurable.
 
-The framework combines pre-deployment testing, runtime scanning, agent/RAG security tests, human review, and production monitoring. Coverage is configurable and should be interpreted as evidence from the selected test corpus—not as a guarantee of complete protection.
+The framework combines pre-deployment testing, runtime scanning, agent/RAG security tests, human review, and production monitoring. Coverage is configurable and should be interpreted as evidence from the selected test corpus.
 
 - 🧪 **Pre-deployment:** [Garak](garak/garak.md), [DeepEval](deepeval/deepeval.md), [RAGAS](ragas/ragas.md), [PyRIT](pyrit/pyrit.md)
 - 📡 **Runtime and monitoring:** [LLM Guard](llm_guard/llm-guard.md), [LangFuse](langfuse/langfuse.md)

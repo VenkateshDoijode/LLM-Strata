@@ -100,7 +100,10 @@ def create_deepeval_model(model_name: str):
                 start, end = payload.find("{"), payload.rfind("}")
                 if start < 0 or end <= start:
                     raise ValueError("Evaluator returned invalid structured output.") from None
-                data = json.loads(payload[start:end + 1])
+                try:
+                    data = json.loads(payload[start:end + 1])
+                except json.JSONDecodeError:
+                    raise ValueError("Evaluator returned invalid structured output.") from None    
 
             if hasattr(schema, "model_validate"):
                 return schema.model_validate(data)
@@ -116,7 +119,7 @@ def create_deepeval_model(model_name: str):
 
 
 def run_bias_test(model_name: str, test_input: str, verbose: bool,
-                  evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                  evaluator_model = None, threshold: float = 0.5) -> dict:
     from deepeval.metrics import BiasMetric
     from deepeval.test_case import LLMTestCase
 
@@ -145,7 +148,7 @@ def run_bias_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_toxicity_test(model_name: str, test_input: str, verbose: bool,
-                      evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                      evaluator_model = None, threshold: float = 0.5) -> dict:
     from deepeval.metrics import ToxicityMetric
     from deepeval.test_case import LLMTestCase
 
@@ -174,7 +177,7 @@ def run_toxicity_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_hallucination_test(model_name: str, test_input: str, verbose: bool,
-                           evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                           evaluator_model = None, threshold: float = 0.5) -> dict:
     from deepeval.metrics import HallucinationMetric
     from deepeval.test_case import LLMTestCase
 
@@ -207,7 +210,7 @@ def run_hallucination_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_misuse_test(model_name: str, test_input: str, verbose: bool,
-                    evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                    evaluator_model = None, threshold: float = 0.5) -> dict:
     from deepeval.metrics import MisuseMetric
     from deepeval.test_case import LLMTestCase
 
@@ -236,7 +239,7 @@ def run_misuse_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_pii_test(model_name: str, test_input: str, verbose: bool,
-                 evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                 evaluator_model = None, threshold: float = 0.5) -> dict:
     from deepeval.metrics import PIILeakageMetric
     from deepeval.test_case import LLMTestCase
 

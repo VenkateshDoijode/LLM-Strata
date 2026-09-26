@@ -72,15 +72,23 @@ def get_client(provider: str | None = None):
 
     elif provider == "gemini":
         from openai import OpenAI
+        base_url = os.environ.get(
+            "GEMINI_ENDPOINT",
+            "https://generativelanguage.googleapis.com/v1beta/openai/",
+        )
         return OpenAI(
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            base_url=base_url,
             api_key=os.environ["GEMINI_API_KEY"],
         )
 
     elif provider == "huggingface":
         from openai import OpenAI
+        base_url = os.environ.get(
+            "HF_ENDPOINT",
+            "https://api-inference.huggingface.co/v1/",
+        )
         return OpenAI(
-            base_url="https://api-inference.huggingface.co/v1/",
+            base_url=base_url,
             api_key=os.environ["HF_TOKEN"],
         )
 
