@@ -55,6 +55,7 @@ def load_profile() -> dict:
 
 def get_model(key: str, fallback: str) -> str:
     """Resolve a model name from the active profile, falling back to the module config value.
+    
     Args:
         key:      Profile key to look up (e.g. 'model', 'judge_model', 'attacker_model').
         fallback: Value from the module's YAML config (or hardcoded default) to use
@@ -73,7 +74,6 @@ def active_profile_name() -> str:
         return "none"
     if _active_name_cache is not None:
         return _active_name_cache
-    with open(_PROFILES_PATH) as f:
-        data = yaml.safe_load(f) or {}
-    return os.environ.get("ACTIVE_PROFILE") or data.get("active_profile", "cost_optimized")
+    load_profile()  # populates _active_name_cache as a sideeffect from global declartion
+    return _active_name_cache or "cost_optimized"
     

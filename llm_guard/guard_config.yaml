@@ -2,18 +2,19 @@
 # LLM Guard - Runtime Input/Output Protection Configuration
 # Docs: https://llm-guard.com
 # ==============================================================================
-
+#
 # WHAT IS LLM GUARD?
 #   LLM Guard sits between your user and the LLM at runtime.
 #   It scans every request (input) and every response (output) in real-time,
 #   blocking or sanitizing anything dangerous before it causes harm.
-
+#
 # HOW IT WORKS:
 #   User Request -> [Input Scanners] -> LLM -> [Output Scanners] -> Safe Response
-
+#
 # HOW TO RUN:
 #   python llm_guard/run_guard.py          # demo mode (test scanners)
 #   python llm_guard/app.py                # start as a proxy API server
+#=================================================================================
 
 # ----------------------- Input Scanners--------------------------------------------
 # Applied to every user message BEFORE it reaches the LLM.
@@ -98,6 +99,10 @@ output_scanners:
   Relevance:
     enabled: true
     threshold: 0.5           # response must be at least 50% relevant to input
+
+
+# ---- Model (overridden by active profile in profiles.yaml)
+model: gpt-4o-mini                     # model to call for allowed prompts
 
 # ---------------------------- Global Settings ---------------------------- 
 settings:

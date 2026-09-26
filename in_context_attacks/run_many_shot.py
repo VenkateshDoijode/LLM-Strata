@@ -90,17 +90,15 @@ def build_shot_list(
         harmful = _cycle(harmful_shots, n_harmful)
         return benign + harmful
 
-    if strategy == "camouflaged":
-        n_harmful = max(1, int(shot_count * 0.2))
-        n_benign  = shot_count - n_harmful
+    # strategy == "camouflaged":
+    n_harmful = max(1, int(shot_count * 0.2))
+    n_benign  = shot_count - n_harmful
 
-        benign  = _cycle(benign_shots, n_benign)
-        harmful = _cycle(harmful_shots, n_harmful)
-        combined = benign + harmful
-        random.shuffle(combined)
-        return combined
-
-    raise ValueError(f"Unknown strategy: {strategy!r}. Choose from {VALID_STRATEGIES}")
+    benign  = _cycle(benign_shots, n_benign)
+    harmful = _cycle(harmful_shots, n_harmful)
+    combined = benign + harmful
+    random.shuffle(combined)
+    return combined
 
 
 # — Prompt builder ————————————————————————————————

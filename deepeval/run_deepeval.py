@@ -73,6 +73,7 @@ def create_deepeval_model(model_name: str):
     class ProviderModel(DeepEvalBaseLLM):
         def __init__(self):
             self.model_name = model_name
+            self.name = model_name   # required by DeepEvalBaseLLM; super().__init__() is skipped
             self.client = get_client()
             self.model = self.load_model()
 
@@ -100,7 +101,10 @@ def create_deepeval_model(model_name: str):
                 start, end = payload.find("{"), payload.rfind("}")
                 if start < 0 or end <= start:
                     raise ValueError("Evaluator returned invalid structured output.") from None
-                data = json.loads(payload[start:end + 1])
+                try:
+                    data = json.loads(payload[start:end + 1])
+                except json.JSONDecodeError:
+                    raise ValueError("Evaluator returned invalid structured output.") from None    
 
             if hasattr(schema, "model_validate"):
                 return schema.model_validate(data)
@@ -115,8 +119,24 @@ def create_deepeval_model(model_name: str):
     return ProviderModel()
 
 
+def _resolve_evaluator(evaluator_model):
+    """Return evaluator_model unchanged if already set; otherwise build one from the active profile.
+ 
+    Ensures that runner functions called directly (not via run_all_tests) always
+    use the profile-resolved evaluator model rather than falling through to
+    DeepEval's internal default.
+    """
+    if evaluator_model is not None:
+        return evaluator_model
+    config = load_config()
+    return create_deepeval_model(
+        get_model("evaluator_model", config.get("evaluator_model", "gpt-4o-mini"))
+    )
+
+
 def run_bias_test(model_name: str, test_input: str, verbose: bool,
-                  evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                  evaluator_model = None, threshold: float = 0.5) -> dict:
+    evaluator_model = _resolve_evaluator(evaluator_model)            
     from deepeval.metrics import BiasMetric
     from deepeval.test_case import LLMTestCase
 
@@ -145,7 +165,8 @@ def run_bias_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_toxicity_test(model_name: str, test_input: str, verbose: bool,
-                      evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                      evaluator_model = None, threshold: float = 0.5) -> dict:
+    evaluator_model = _resolve_evaluator(evaluator_model)            
     from deepeval.metrics import ToxicityMetric
     from deepeval.test_case import LLMTestCase
 
@@ -174,7 +195,8 @@ def run_toxicity_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_hallucination_test(model_name: str, test_input: str, verbose: bool,
-                           evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                           evaluator_model = None, threshold: float = 0.5) -> dict:
+    evaluator_model = _resolve_evaluator(evaluator_model)            
     from deepeval.metrics import HallucinationMetric
     from deepeval.test_case import LLMTestCase
 
@@ -207,7 +229,8 @@ def run_hallucination_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_misuse_test(model_name: str, test_input: str, verbose: bool,
-                    evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                    evaluator_model = None, threshold: float = 0.5) -> dict:
+    evaluator_model = _resolve_evaluator(evaluator_model)            
     from deepeval.metrics import MisuseMetric
     from deepeval.test_case import LLMTestCase
 
@@ -236,7 +259,8 @@ def run_misuse_test(model_name: str, test_input: str, verbose: bool,
 
 
 def run_pii_test(model_name: str, test_input: str, verbose: bool,
-                 evaluator_model: str = "gpt-4o-mini", threshold: float = 0.5) -> dict:
+                 evaluator_model = None, threshold: float = 0.5) -> dict:
+    evaluator_model = _resolve_evaluator(evaluator_model)            
     from deepeval.metrics import PIILeakageMetric
     from deepeval.test_case import LLMTestCase
 
